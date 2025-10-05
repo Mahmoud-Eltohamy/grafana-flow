@@ -13,13 +13,6 @@ Grafana 10+ Flow Diagram Visualization plugin
 - Fully Functional releases available for testing.
 - Work in Progress. Please provide feedback and report any issues.
 
-## Usage
-### Installation
-Allow and Install the unsigned plugin, ie:
-```
-- GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=qxip-flow-panel
-- GF_INSTALL_PLUGINS=https://github.com/metrico/grafana-flow/releases/download/v10.1.1/qxip-flow-panel-10.1.1.zip;qxip-flow-panel"
-```
 
 ### Panel Options
 
@@ -78,3 +71,4 @@ npm start
 after all open link http://localhost:3000/ 
 
 -->
+
