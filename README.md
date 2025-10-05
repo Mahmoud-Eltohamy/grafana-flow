@@ -33,7 +33,7 @@ Allow and Install the unsigned plugin, ie:
 how to run DEMO (development mode):
 
 ---
-1) enviroument:
+1) environment:
  - OS: Windows (WSL2), linux or MacOS
  - Make sure node version should be [>= 16.x]
 
@@ -63,17 +63,6 @@ run docker-image of grafana
 ```
 npm run server
 ```
-run dev mode NGX-FLOW plugin (Angular Project)
-[3] run command on parallel terminal on same time
-
-```
-cd ./ngx-flow
-
-npm install
-
-npm start
-```
-
 
 after all open link http://localhost:3000/ 
 

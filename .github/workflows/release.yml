@@ -28,15 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Angular dependencies
-        run: |
-          cd ngx-flow
-          npm ci
-
-      - name: Build Angular frontend
-        run: npm run build:component
-
-      - name: Build and test frontend
+      - name: Build React frontend
         run: npm run build
 
       - name: Check for backend

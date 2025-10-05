@@ -229,8 +229,8 @@ export const FlowVisualization: React.FC<FlowVisualizationProps> = ({
 
   // Handle message click
   const handleMessageClick = useCallback((hash: string, event: MouseEvent, item: any) => {
-    // Emit custom event for compatibility with existing event handlers
-    const customEvent = new CustomEvent('ngx-flow-click-item', {
+    // Emit custom event for flow item click
+    const customEvent = new CustomEvent('flow-item-click', {
       detail: { hash, item }
     });
     window.dispatchEvent(customEvent);

@@ -49,9 +49,5 @@ declare namespace JSX {
       data?: string;
       theme?: 'light' | 'dark';
     };
-    'ngx-flow-out': {
-      'data-flow'?: string;
-      theme?: string;
-    };
   }
 }

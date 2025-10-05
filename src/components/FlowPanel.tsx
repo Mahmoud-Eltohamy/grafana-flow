@@ -23,7 +23,7 @@ export interface MyPanelProps extends PanelProps {
 }
 
 
-// Removed Angular custom element declarations as we're now using React components
+// React component declarations for flow visualization
 
 const getStyles = ({ name: themeName }: GrafanaTheme2) => {
     return {
@@ -115,12 +115,12 @@ export const FlowPanel = (props: MyPanelProps) => {
             setModalData(details);
             setModalIsOpen(true);
         };
-        document.addEventListener('ngx-flow-click-item', function (e: any) {
+        document.addEventListener('flow-item-click', function (e: any) {
             ngxFlowClickHandler(e)
         });
 
         return () => {
-            document.removeEventListener('ngx-flow-click-item', ngxFlowClickHandler);
+            document.removeEventListener('flow-item-click', ngxFlowClickHandler);
         }
     }, [modalDataFields]);
 

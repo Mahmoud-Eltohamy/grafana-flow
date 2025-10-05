@@ -133,7 +133,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
   `
 });
 
-// Method color mapping similar to Angular implementation
+// Method color mapping for SIP methods
 const getMethodColor = (method: string, theme: GrafanaTheme2): string => {
   const methodColors: { [key: string]: string } = {
     'INVITE': theme.colors.success.main,
