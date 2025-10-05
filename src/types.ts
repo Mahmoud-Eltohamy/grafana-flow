@@ -10,6 +10,7 @@ export interface FlowOptions {
     sortoption: "none" | "time_old" | "time_new";
     colorGenerator: OptionValue;
     showbody: boolean;
+    isSimplify?: boolean;
 }
 
 type OptionValue = string | string[];

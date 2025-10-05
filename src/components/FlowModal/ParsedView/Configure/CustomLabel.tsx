@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MultiValueGenericProps } from 'react-select';
 
 export const MultiValueLabel = ({ data: { label }, innerProps }: MultiValueGenericProps<any>) => {

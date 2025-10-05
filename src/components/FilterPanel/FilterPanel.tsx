@@ -1,7 +1,7 @@
 import { css, cx } from "@emotion/css";
 import { PanelData } from "@grafana/data";
 import { Button, Toggletip, useTheme2 } from "@grafana/ui";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FilterMenu } from "./FilterMenu";
 
 export interface FilterProps {

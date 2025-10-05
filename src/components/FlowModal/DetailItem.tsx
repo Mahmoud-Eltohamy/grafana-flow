@@ -1,8 +1,7 @@
 import { css } from "@emotion/css";
 import { InlineLabel, useStyles2 } from "@grafana/ui";
 import { CopyText } from "components/CopyText/CopyText";
-import React, { useRef, useState } from "react";
-import ReactJson from "react-json-view";
+import "@alenaksu/json-viewer";
 const getStyles = () => {
     return {
 
@@ -23,7 +22,6 @@ interface Props {
 }
 export const DetailItem = ({ item, theme, tooltip }: Props): JSX.Element | null => {
     let [key, value]: any = item;
-    const themeName: any = theme === 'Dark' ? 'railscasts' : 'rjv-default'
     let isJSON = false;
     const styles = useStyles2(getStyles);
     const isTimestamp = (new Date(value)).getTime() > 0;
@@ -33,19 +31,8 @@ export const DetailItem = ({ item, theme, tooltip }: Props): JSX.Element | null 
     try {
         isJSON = typeof JSON.parse(value) === 'object';
     } catch (e) { }
-    const textAreaRef: any = useRef(null);
     const isMultiLine = !!value?.includes('\n') || value?.length > 50;
-    function copyToClipboard() {
-        if (textAreaRef && textAreaRef.current) {
-            textAreaRef.current.focus();
-            textAreaRef.current.select();
-            document.execCommand('copy');
-        }
-    };
-    const [copyValue, setCopyValue] = useState('')
     return (<div>
-        <textarea
-            ref={textAreaRef} value={copyValue} style={{ pointerEvents: 'none', opacity: 0, position: 'fixed', left: 0, top: 0, border: 0, padding: 0 }} />
         {value && (
             (isJSON || isMultiLine) ?
                 <>
@@ -53,31 +40,15 @@ export const DetailItem = ({ item, theme, tooltip }: Props): JSX.Element | null 
                         {key}
                     </InlineLabel>
             {isJSON ?
-                <pre>
-                    <ReactJson
-                        src={JSON.parse(value)}
-                        theme={themeName}
-                        displayDataTypes={false}
-                        displayObjectSize={false}
-                        enableClipboard={({ src }) => {
-                            let textToCopy = JSON.stringify(src);
-                            if (textToCopy.startsWith("\"") && textToCopy.endsWith("\"")) {
-                                textToCopy = textToCopy.substring(1, textToCopy.length - 1);
-                            }
-                            if (navigator.clipboard) {
-                                navigator.clipboard.writeText(textToCopy)
-                            } else {
-                                setCopyValue(textToCopy)
-                                setTimeout(() => {
-                                    copyToClipboard()
-                                }, 0);
-                            }
-                        }}
-                        quotesOnKeys={false}
-                        name={false}
-
+                <div style={{ position: 'relative' }}>
+                    <json-viewer 
+                        data={value}
+                        theme={theme === 'Dark' ? 'dark' : 'light'}
                     />
-                </pre> :
+                    <span style={{ position: 'absolute', right: 15, top: 5 }}>
+                        <CopyText text={value} />
+                    </span>
+                </div> :
                 <span style={{ position: 'relative' }}>
                     <pre className={styles.pre}>
                         {value}

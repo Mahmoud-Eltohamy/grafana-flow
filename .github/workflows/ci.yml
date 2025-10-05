@@ -14,56 +14,63 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - name: Setup Node.js environment
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-          # cache: 'npm'
+          node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          npm install 
-          # npm ci
+        run: npm ci
+
       - name: Install Angular dependencies
         run: |
-           cd ngx-flow
-           npm install
+          cd ngx-flow
+          npm ci
+
       - name: Check types
         run: npm run typecheck
+
       - name: Lint
         run: npm run lint
+
       - name: Unit tests
         run: npm run test:ci
+
       - name: Build Angular frontend
-        run: npm run build:component       
+        run: npm run build:component
+
       - name: Build and test frontend
         run: npm run build
 
       - name: Check for backend
         id: check-for-backend
         run: |
-          if [ -f "Magefile.go" ]
-          then
+          if [ -f "Magefile.go" ]; then
             echo "has-backend=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-backend=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup Go environment
         if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: '1.22'
 
       - name: Test backend
         if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@v2
+        uses: magefile/mage-action@v3
         with:
           version: latest
           args: coverage
 
       - name: Build backend
         if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@v2
+        uses: magefile/mage-action@v3
         with:
           version: latest
           args: buildAll
@@ -71,27 +78,45 @@ jobs:
       - name: Check for E2E
         id: check-for-e2e
         run: |
-          if [ -d "cypress" ]
-          then
+          if [ -d "cypress" ]; then
             echo "has-e2e=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-e2e=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Start grafana docker
         if: steps.check-for-e2e.outputs.has-e2e == 'true'
-        run: docker compose up -d
+        run: |
+          docker compose up -d
+          sleep 30
+          docker compose ps
+
+      - name: Wait for Grafana to be ready
+        if: steps.check-for-e2e.outputs.has-e2e == 'true'
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3000/api/health; do sleep 2; done'
 
       - name: Run e2e tests
+        id: run-e2e-tests
         if: steps.check-for-e2e.outputs.has-e2e == 'true'
         run: npm run e2e
 
       - name: Stop grafana docker
-        if: steps.check-for-e2e.outputs.has-e2e == 'true'
+        if: steps.check-for-e2e.outputs.has-e2e == 'true' && always()
         run: docker compose down
 
       - name: Archive E2E output
-        uses: actions/upload-artifact@v3
-        if: steps.check-for-e2e.outputs.has-e2e == 'true' && steps.run-e2e-tests.outcome != 'success'
+        uses: actions/upload-artifact@v4
+        if: steps.check-for-e2e.outputs.has-e2e == 'true' && failure()
         with:
           name: cypress-videos
           path: cypress/videos
+          retention-days: 5
+
+      - name: Archive E2E screenshots
+        uses: actions/upload-artifact@v4
+        if: steps.check-for-e2e.outputs.has-e2e == 'true' && failure()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
           retention-days: 5

@@ -1,6 +1,6 @@
 import { StandardEditorProps } from "@grafana/data";
 import { MultiSelect } from "@grafana/ui";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 export const MultiSelectEditor = ({ value, onChange, context: { data } }: StandardEditorProps<string[]>) => {
     const [selectValue, setSelectValue] = useState<any>();

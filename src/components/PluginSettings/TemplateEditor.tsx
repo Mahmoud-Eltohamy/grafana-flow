@@ -1,7 +1,7 @@
 import { cx, css } from "@emotion/css";
 import { StandardEditorProps } from "@grafana/data";
 import { useTheme2, useStyles2, Collapse } from "@grafana/ui";
-import React, { useState } from "react";
+import { useState } from "react";
 const getStyles = () => {
     return {
         wrapper: css`

@@ -11,74 +11,97 @@ jobs:
     env:
       GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }} # Requires a Grafana API key from Grafana.com.
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - name: Setup Node.js environment
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Setup Go environment
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: '1.22'
 
       - name: Install dependencies
-        run: |
-           npm install
-           # npm ci
+        run: npm ci
+
       - name: Install Angular dependencies
         run: |
-           cd ngx-flow
-           npm install
-           # npm ci
+          cd ngx-flow
+          npm ci
+
       - name: Build Angular frontend
-        run: npm run build:component       
+        run: npm run build:component
+
       - name: Build and test frontend
         run: npm run build
 
       - name: Check for backend
         id: check-for-backend
         run: |
-          if [ -f "Magefile.go" ]
-          then
+          if [ -f "Magefile.go" ]; then
             echo "has-backend=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-backend=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Test backend
         if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@v2
+        uses: magefile/mage-action@v3
         with:
           version: latest
           args: coverage
 
       - name: Build backend
         if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@v2
+        uses: magefile/mage-action@v3
         with:
           version: latest
           args: buildAll
 
       - name: Warn missing Grafana API key
         run: |
-          echo Please generate a Grafana API key: https://grafana.com/docs/grafana/latest/developers/plugins/sign-a-plugin/#generate-an-api-key
-          echo Once done please follow the instructions found here: https://github.com/${{github.repository}}/blob/main/README.md#using-github-actions-release-workflow
+          echo "::warning::Please generate a Grafana API key: https://grafana.com/docs/grafana/latest/developers/plugins/sign-a-plugin/#generate-an-api-key"
+          echo "::warning::Once done please follow the instructions found here: https://github.com/${{github.repository}}/blob/main/README.md#using-github-actions-release-workflow"
         if: ${{ env.GRAFANA_API_KEY == '' }}
 
       - name: Sign plugin
         run: npm run sign
         if: ${{ env.GRAFANA_API_KEY != '' }}
 
+      - name: Verify build output
+        run: |
+          if [ ! -f "dist/plugin.json" ]; then
+            echo "::error::Build failed - plugin.json not found in dist directory"
+            exit 1
+          fi
+          echo "Build verification successful"
+
       - name: Get plugin metadata
         id: metadata
         run: |
-          sudo apt-get install jq
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
 
-          export GRAFANA_PLUGIN_ID=$(cat dist/plugin.json | jq -r .id)
-          export GRAFANA_PLUGIN_VERSION=$(cat dist/plugin.json | jq -r .info.version)
-          export GRAFANA_PLUGIN_TYPE=$(cat dist/plugin.json | jq -r .type)
+          if [ ! -f "dist/plugin.json" ]; then
+            echo "::error::plugin.json not found in dist directory"
+            exit 1
+          fi
+
+          export GRAFANA_PLUGIN_ID=$(jq -r .id dist/plugin.json)
+          export GRAFANA_PLUGIN_VERSION=$(jq -r .info.version dist/plugin.json)
+          export GRAFANA_PLUGIN_TYPE=$(jq -r .type dist/plugin.json)
           export GRAFANA_PLUGIN_ARTIFACT=${GRAFANA_PLUGIN_ID}-${GRAFANA_PLUGIN_VERSION}.zip
           export GRAFANA_PLUGIN_ARTIFACT_CHECKSUM=${GRAFANA_PLUGIN_ARTIFACT}.md5
+
+          if [ "$GRAFANA_PLUGIN_ID" = "null" ] || [ "$GRAFANA_PLUGIN_VERSION" = "null" ]; then
+            echo "::error::Failed to extract plugin metadata from plugin.json"
+            exit 1
+          fi
 
           echo "plugin-id=${GRAFANA_PLUGIN_ID}" >> $GITHUB_OUTPUT
           echo "plugin-version=${GRAFANA_PLUGIN_VERSION}" >> $GITHUB_OUTPUT
@@ -91,30 +114,60 @@ jobs:
       - name: Read changelog
         id: changelog
         run: |
-          awk '/^## / {s++} s == 1 {print}' CHANGELOG.md > release_notes.md
-          echo "path=release_notes.md" >> $GITHUB_OUTPUT
+          if [ -f "CHANGELOG.md" ]; then
+            awk '/^## / {s++} s == 1 {print}' CHANGELOG.md > release_notes.md
+            echo "path=release_notes.md" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::CHANGELOG.md not found, creating empty release notes"
+            touch release_notes.md
+            echo "path=release_notes.md" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check package version
-        run: if [ "v${{ steps.metadata.outputs.plugin-version }}" != "${{ steps.metadata.outputs.github-tag }}" ]; then printf "\033[0;31mPlugin version doesn't match tag name\033[0m\n"; exit 1; fi
+        run: |
+          if [ "v${{ steps.metadata.outputs.plugin-version }}" != "${{ steps.metadata.outputs.github-tag }}" ]; then
+            echo "::error::Plugin version (v${{ steps.metadata.outputs.plugin-version }}) doesn't match tag name (${{ steps.metadata.outputs.github-tag }})"
+            exit 1
+          fi
+          echo "Version check passed: ${{ steps.metadata.outputs.github-tag }}"
 
       - name: Package plugin
         id: package-plugin
         run: |
-          mv dist ${{ steps.metadata.outputs.plugin-id }}
-          zip ${{ steps.metadata.outputs.archive }} ${{ steps.metadata.outputs.plugin-id }} -r
+          if [ ! -d "dist" ]; then
+            echo "::error::dist directory not found"
+            exit 1
+          fi
+          
+          cp -r dist ${{ steps.metadata.outputs.plugin-id }}
+          zip -r ${{ steps.metadata.outputs.archive }} ${{ steps.metadata.outputs.plugin-id }}
+          
+          if [ ! -f "${{ steps.metadata.outputs.archive }}" ]; then
+            echo "::error::Failed to create plugin archive"
+            exit 1
+          fi
+          
           md5sum ${{ steps.metadata.outputs.archive }} > ${{ steps.metadata.outputs.archive-checksum }}
-          echo "checksum=$(cat ./${{ steps.metadata.outputs.archive-checksum }} | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          echo "checksum=$(cut -d' ' -f1 ./${{ steps.metadata.outputs.archive-checksum }})" >> $GITHUB_OUTPUT
+          
+          echo "Plugin packaged successfully: ${{ steps.metadata.outputs.archive }}"
 
       - name: Validate plugin
         run: |
-          git clone https://github.com/grafana/plugin-validator
-          pushd ./plugin-validator/pkg/cmd/plugincheck2
+          git clone --depth 1 https://github.com/grafana/plugin-validator
+          cd ./plugin-validator/pkg/cmd/plugincheck2
           go install
-          popd
+          cd ../../../..
+          
+          if ! command -v plugincheck2 &> /dev/null; then
+            echo "::error::Failed to install plugin validator"
+            exit 1
+          fi
+          
           plugincheck2 -config ./plugin-validator/config/default.yaml ${{ steps.metadata.outputs.archive }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           generate_release_notes: true

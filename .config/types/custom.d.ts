@@ -41,3 +41,17 @@ declare module '*.otf';
 declare module 'web-component-load' {
   export function load(url: string): any
 }
+
+// JSON Viewer web component
+declare namespace JSX {
+  interface IntrinsicElements {
+    'json-viewer': {
+      data?: string;
+      theme?: 'light' | 'dark';
+    };
+    'ngx-flow-out': {
+      'data-flow'?: string;
+      theme?: string;
+    };
+  }
+}

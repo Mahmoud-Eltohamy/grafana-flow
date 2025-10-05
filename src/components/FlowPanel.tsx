@@ -1,7 +1,6 @@
 import { css, cx } from '@emotion/css';
 import { GrafanaTheme2, PanelProps } from '@grafana/data';
-import React, { useEffect, useState } from 'react';
-import '../../ngx-flow/widget/ngx-flow.js';
+import { useEffect, useState } from 'react';
 
 import {
     Button,
@@ -15,6 +14,7 @@ import { pcapExporter, textExporter } from 'helpers/exporters';
 import { FlowOptions } from 'types.js';
 import { FilterPanel, Filters, defaultFilters } from './FilterPanel/FilterPanel';
 import { FlowModal } from './FlowModal/FlowModal';
+import { FlowVisualization } from './FlowVisualization/FlowVisualization';
 
 
 
@@ -23,16 +23,7 @@ export interface MyPanelProps extends PanelProps {
 }
 
 
-type CustomElement<T> = Partial<T & React.DOMAttributes<T> & { children: any }>;
-
-declare global {
-    /* eslint-disable-next-line */
-    namespace JSX {
-        interface IntrinsicElements {
-            ['ngx-flow-out']: CustomElement<any>;
-        }
-    }
-}
+// Removed Angular custom element declarations as we're now using React components
 
 const getStyles = ({ name: themeName }: GrafanaTheme2) => {
     return {
@@ -79,7 +70,6 @@ const getStyles = ({ name: themeName }: GrafanaTheme2) => {
 
 export const FlowPanel = (props: MyPanelProps) => {
     const { options, data, width, height } = props
-    const [flowData, setFlowData] = useState({ actors: [], data: [] });
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [modalData, setModalData] = useState({});
     const [modalDataFields, setModalDataFields] = useState<Map<string, any>>();
@@ -113,7 +103,7 @@ export const FlowPanel = (props: MyPanelProps) => {
     // Set flow data and sort
     useEffect(() => {
         if (data && options) {
-            filterFlowItems(data, options, setFlowData, setModalDataFields, filters);
+            filterFlowItems(data, options, () => {}, setModalDataFields, filters);
         }
     }, [data, options, filters]);
     useEffect(() => {
@@ -134,7 +124,6 @@ export const FlowPanel = (props: MyPanelProps) => {
         }
     }, [modalDataFields]);
 
-    const flowDataJSON = JSON.stringify(flowData);
     const menu = (
         <Menu>
             <Menu.Item
@@ -187,7 +176,24 @@ export const FlowPanel = (props: MyPanelProps) => {
             </div>
             {/* <pre>{JSON.stringify(flowData)}</pre> */}
             {/* <FlowMemo flowData={flowData} themeName={themeName} /> */}
-            <ngx-flow-out data-flow={flowDataJSON} is-simplify={isSimplify} theme={themeName} />
+            <FlowVisualization 
+                data={data}
+                options={{...options, isSimplify}}
+                width={width}
+                height={height}
+                fieldConfig={props.fieldConfig}
+                id={props.id}
+                timeRange={data.timeRange}
+                timeZone={'browser'}
+                replaceVariables={props.replaceVariables}
+                onOptionsChange={props.onOptionsChange}
+                onFieldConfigChange={props.onFieldConfigChange}
+                onChangeTimeRange={props.onChangeTimeRange}
+                eventBus={props.eventBus}
+                transparent={props.transparent}
+                renderCounter={0}
+                title="Flow Visualization"
+            />
 
             <FlowModal fullData={data} modalIsOpen={modalIsOpen} modalData={modalData} onModalClose={onModalClose} themeName={themeName} />
 

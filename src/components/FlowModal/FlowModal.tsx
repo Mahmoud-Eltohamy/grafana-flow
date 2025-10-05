@@ -1,5 +1,5 @@
 import { Modal, Button, InlineSwitch, Tooltip, IconButton } from "@grafana/ui"
-import React, { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { DetailItem } from "./DetailItem"
 import { ParsedView } from "./ParsedView/ParsedView"
 import { ConfigureParsedViewModal } from "./ParsedView/Configure/ConfigureParsedView"
@@ -52,7 +52,7 @@ export const FlowModal = ({ modalIsOpen, modalData, onModalClose, themeName, ful
                         value={isParsed}
                         onChange={() => { setIsParsed(!isParsed); }}
                         label="Parsed view" />
-                    <IconButton style={{ position: 'absolute', right: '10px', top: '7px' }} name="cog" variant="secondary" onClick={() => setIsParsedViewModalOpen(true)} />
+                    <IconButton style={{ position: 'absolute', right: '10px', top: '7px' }} name="cog" variant="secondary" onClick={() => setIsParsedViewModalOpen(true)} aria-label="Configure parsed view" />
                     <ConfigureParsedViewModal fullData={fullData} dataScheme={dataSchemeValue} setDataSchemeValue={setDataSchemeValue} isModalOpen={isParsedViewModalOpen} onModalClose={onConfigureModalClose} data={modalData} />
                 </span>
             </Tooltip>
