@@ -1,6 +1,15 @@
 # Changelog
 
-## 10.3.0 (2024-12-19)
+## [Unreleased]
+
+## [10.3.1] - 2025-10-05
+
+### Fixed
+- Improved GitHub Actions release workflow with better validation and debugging
+- Added verification steps for version replacement in plugin.json
+- Enhanced package creation with better error handling and structure validation
+
+## [10.3.0] - 2025-10-05
 
 ### Features
 - Complete migration from Angular to React framework
