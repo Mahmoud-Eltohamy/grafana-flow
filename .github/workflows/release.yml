@@ -28,8 +28,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build React frontend
+      - name: Build plugin
         run: npm run build
+        
+      - name: List build output
+        run: |
+          echo "Contents of dist directory:"
+          ls -la dist/
+          echo "Contents of plugin.json:"
+          cat dist/plugin.json
+
+      - name: Verify version replacement
+        run: |
+          if grep -q "%VERSION%" dist/plugin.json; then
+            echo "::error::Version placeholder was not replaced in plugin.json"
+            exit 1
+          fi
+          if grep -q "%TODAY%" dist/plugin.json; then
+            echo "::error::Date placeholder was not replaced in plugin.json"
+            exit 1
+          fi
+          echo "Version replacement verification passed"
 
       - name: Check for backend
         id: check-for-backend
@@ -131,7 +150,21 @@ jobs:
             exit 1
           fi
           
-          cp -r dist ${{ steps.metadata.outputs.plugin-id }}
+          # Verify plugin.json exists and has correct content
+          if [ ! -f "dist/plugin.json" ]; then
+            echo "::error::plugin.json not found in dist directory"
+            exit 1
+          fi
+          
+          # Create plugin directory with correct structure
+          mkdir -p ${{ steps.metadata.outputs.plugin-id }}
+          cp -r dist/* ${{ steps.metadata.outputs.plugin-id }}/
+          
+          # Verify the structure
+          echo "Plugin directory structure:"
+          ls -la ${{ steps.metadata.outputs.plugin-id }}/
+          
+          # Create the zip archive
           zip -r ${{ steps.metadata.outputs.archive }} ${{ steps.metadata.outputs.plugin-id }}
           
           if [ ! -f "${{ steps.metadata.outputs.archive }}" ]; then
@@ -139,10 +172,15 @@ jobs:
             exit 1
           fi
           
+          # Generate checksum
           md5sum ${{ steps.metadata.outputs.archive }} > ${{ steps.metadata.outputs.archive-checksum }}
           echo "checksum=$(cut -d' ' -f1 ./${{ steps.metadata.outputs.archive-checksum }})" >> $GITHUB_OUTPUT
           
+          # Show final archive info
           echo "Plugin packaged successfully: ${{ steps.metadata.outputs.archive }}"
+          echo "Archive size: $(ls -lh ${{ steps.metadata.outputs.archive }} | awk '{print $5}')"
+          echo "Archive contents:"
+          unzip -l ${{ steps.metadata.outputs.archive }}
 
       - name: Validate plugin
         run: |
